@@ -11,7 +11,8 @@ exports.getTasks = (req, res) => {
       DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
       DATE_FORMAT(end_date, '%Y-%m-%d %H:%i:%s') AS end_date,
       duration,
-      parent_id AS parent
+      parent_id AS parent,
+      progress
     FROM tasks
     WHERE project_id = ?
   `;
@@ -25,7 +26,6 @@ exports.getTasks = (req, res) => {
   });
 };
 
-
 // Create a new task
 exports.createTask = (req, res) => {
   const { projectId } = req.params;
@@ -35,6 +35,7 @@ exports.createTask = (req, res) => {
     start_date: req.body.start_date ? new Date(req.body.start_date) : null,
     end_date: req.body.end_date ? new Date(req.body.end_date) : null,
     duration: parseInt(req.body.duration, 10) || 1,
+    progress: parseFloat(req.body.progress) || 0.0,
     project_id: projectId,
     parent_id: req.body.parent_id || null,
   };
@@ -44,14 +45,15 @@ exports.createTask = (req, res) => {
   }
 
   const query = `
-    INSERT INTO tasks (text, start_date, end_date, duration, project_id, parent_id)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (text, start_date, end_date, duration, progress, project_id, parent_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     taskData.text,
     taskData.start_date,
     taskData.end_date,
     taskData.duration,
+    taskData.progress,
     taskData.project_id,
     taskData.parent_id,
   ];
@@ -64,13 +66,11 @@ exports.createTask = (req, res) => {
 
     res.status(201).json({
       id: result.insertId,
-      text: taskData.text,
+      ...taskData,
       start_date: taskData.start_date.toISOString().slice(0, 19).replace("T", " "),
       end_date: taskData.end_date
         ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
         : null,
-      duration: taskData.duration,
-      parent: taskData.parent_id,
     });
   });
 };
@@ -84,6 +84,7 @@ exports.updateTask = (req, res) => {
     start_date: req.body.start_date ? new Date(req.body.start_date) : null,
     end_date: req.body.end_date ? new Date(req.body.end_date) : null,
     duration: parseInt(req.body.duration, 10) || 1,
+    progress: parseFloat(req.body.progress) || 0.0,
   };
 
   if (!taskData.text || !taskData.start_date || !taskData.duration) {
@@ -92,7 +93,7 @@ exports.updateTask = (req, res) => {
 
   const query = `
     UPDATE tasks 
-    SET text = ?, start_date = ?, end_date = ?, duration = ?
+    SET text = ?, start_date = ?, end_date = ?, duration = ?, progress = ?
     WHERE id = ?
   `;
   const values = [
@@ -100,6 +101,7 @@ exports.updateTask = (req, res) => {
     taskData.start_date,
     taskData.end_date,
     taskData.duration,
+    taskData.progress,
     taskId,
   ];
 
@@ -115,12 +117,11 @@ exports.updateTask = (req, res) => {
 
     res.status(200).json({
       id: taskId,
-      text: taskData.text,
+      ...taskData,
       start_date: taskData.start_date.toISOString().slice(0, 19).replace("T", " "),
       end_date: taskData.end_date
         ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
         : null,
-      duration: taskData.duration,
     });
   });
 };
