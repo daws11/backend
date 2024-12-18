@@ -17,7 +17,6 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', taskRoutes);
 
-
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -1,90 +1,145 @@
-const Task = require("../models/taskModel");
-const { format } = require("date-fns");
+const db = require("../config/db");
 
+// Get all tasks for a project
 exports.getTasks = (req, res) => {
   const { projectId } = req.params;
-  Task.findByProjectId(projectId, (err, tasks) => {
+
+  const query = `
+    SELECT 
+      id, 
+      text, 
+      DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
+      DATE_FORMAT(end_date, '%Y-%m-%d %H:%i:%s') AS end_date,
+      duration,
+      parent_id AS parent
+    FROM tasks
+    WHERE project_id = ?
+  `;
+
+  db.query(query, [projectId], (err, tasks) => {
     if (err) {
       console.error("Failed to fetch tasks:", err);
       return res.status(500).send("Server error");
     }
-    const formattedTasks = tasks.map((task) => ({
-      ...task,
-      start_date: new Date(task.start_date)
-        .toISOString()
-        .slice(0, 19)
-        .replace("T", " "),
-    }));
-    res.status(200).json({ data: formattedTasks, links: [] });
+    res.status(200).json({ data: tasks });
   });
 };
 
+
+// Create a new task
 exports.createTask = (req, res) => {
   const { projectId } = req.params;
+
   const taskData = {
-    ...req.body,
+    text: req.body.text || "New task",
+    start_date: req.body.start_date ? new Date(req.body.start_date) : null,
+    end_date: req.body.end_date ? new Date(req.body.end_date) : null,
+    duration: parseInt(req.body.duration, 10) || 1,
     project_id: projectId,
-    start_date: new Date(req.body.start_date),
-    end_date: req.body.end_date ? new Date(req.body.end_date) : undefined,
-    duration: parseInt(req.body.duration, 10),
+    parent_id: req.body.parent_id || null,
   };
 
-  console.log("Received task data:", taskData);
-
   if (!taskData.text || !taskData.start_date || !taskData.duration) {
-    console.error("Invalid task data:", taskData);
     return res.status(400).json({ error: "Invalid task data" });
   }
 
-  Task.create(taskData, (err, result) => {
+  const query = `
+    INSERT INTO tasks (text, start_date, end_date, duration, project_id, parent_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  const values = [
+    taskData.text,
+    taskData.start_date,
+    taskData.end_date,
+    taskData.duration,
+    taskData.project_id,
+    taskData.parent_id,
+  ];
+
+  db.query(query, values, (err, result) => {
     if (err) {
       console.error("Failed to create task:", err);
-      return res.status(500).json({ error: "Server error" });
+      return res.status(500).json({ error: "Failed to create task" });
     }
-    console.log("Task created successfully:", result);
-    const newTaskId = result.insertId || Date.now();
+
     res.status(201).json({
-      id: newTaskId,
+      id: result.insertId,
       text: taskData.text,
-      start_date: format(taskData.start_date, "yyyy-MM-dd HH:mm:ss"),
+      start_date: taskData.start_date.toISOString().slice(0, 19).replace("T", " "),
       end_date: taskData.end_date
-        ? format(taskData.end_date, "yyyy-MM-dd HH:mm:ss")
-        : undefined,
+        ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
+        : null,
+      duration: taskData.duration,
+      parent: taskData.parent_id,
+    });
+  });
+};
+
+// Update a task by ID
+exports.updateTask = (req, res) => {
+  const { taskId } = req.params;
+
+  const taskData = {
+    text: req.body.text,
+    start_date: req.body.start_date ? new Date(req.body.start_date) : null,
+    end_date: req.body.end_date ? new Date(req.body.end_date) : null,
+    duration: parseInt(req.body.duration, 10) || 1,
+  };
+
+  if (!taskData.text || !taskData.start_date || !taskData.duration) {
+    return res.status(400).json({ error: "Invalid task data" });
+  }
+
+  const query = `
+    UPDATE tasks 
+    SET text = ?, start_date = ?, end_date = ?, duration = ?
+    WHERE id = ?
+  `;
+  const values = [
+    taskData.text,
+    taskData.start_date,
+    taskData.end_date,
+    taskData.duration,
+    taskId,
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error("Failed to update task:", err);
+      return res.status(500).json({ error: "Failed to update task" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.status(200).json({
+      id: taskId,
+      text: taskData.text,
+      start_date: taskData.start_date.toISOString().slice(0, 19).replace("T", " "),
+      end_date: taskData.end_date
+        ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
+        : null,
       duration: taskData.duration,
     });
   });
 };
 
-exports.updateTask = (req, res) => {
-  const { taskId } = req.params;
-  const taskData = req.body;
-
-  console.log("Updating task data:", taskId, taskData);
-
-  if (!taskData.text || !taskData.start_date || !taskData.duration) {
-    console.error("Invalid task data:", taskData);
-    return res.status(400).send("Invalid task data");
-  }
-
-  Task.updateById(taskId, taskData, (err, task) => {
-    if (err) {
-      console.error("Failed to update task:", err);
-      return res.status(500).send("Server error");
-    }
-    res.status(200).json(task);
-  });
-};
-
+// Delete a task by ID
 exports.deleteTask = (req, res) => {
   const { taskId } = req.params;
 
-  console.log("Deleting task:", taskId);
-
-  Task.deleteById(taskId, (err) => {
+  const query = "DELETE FROM tasks WHERE id = ?";
+  db.query(query, [taskId], (err, result) => {
     if (err) {
       console.error("Failed to delete task:", err);
-      return res.status(500).send("Server error");
+      return res.status(500).json({ error: "Failed to delete task" });
     }
-    res.status(200).send(`Task with id ${taskId} deleted.`);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.status(200).json({ message: `Task with id ${taskId} deleted.` });
   });
 };
