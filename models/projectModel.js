@@ -91,6 +91,26 @@ const Project = {
     ];
 
     db.query(query, values, callback);
+  },
+
+  addTeamMembers: (projectId, userIds, callback) => {
+    const query = `
+      INSERT INTO project_team_members (project_id, user_id)
+      VALUES ${userIds.map(() => '(?, ?)').join(', ')}
+    `;
+
+    const values = userIds.flatMap((userId) => [projectId, userId]);
+    db.query(query, values, callback);
+  },
+
+  getTeamMembersByProject: (projectId, callback) => {
+    const query = `
+      SELECT u.id, u.name, u.email
+      FROM project_team_members ptm
+      JOIN users u ON ptm.user_id = u.id
+      WHERE ptm.project_id = ?
+    `;
+    db.query(query, [projectId], callback);
   }
 };
 

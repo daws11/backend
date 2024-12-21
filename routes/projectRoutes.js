@@ -6,5 +6,6 @@ router.get('/', projectController.getProjects);
 router.post('/', projectController.createProject);
 router.get('/:id', projectController.getProjectById); // Route to fetch project by ID
 router.delete('/:id', projectController.deleteProject);
+router.get('/:id/team-members', projectController.getTeamMembersByProject);
 
 module.exports = router;
