@@ -6,15 +6,19 @@ exports.getTasks = (req, res) => {
 
   const query = `
     SELECT 
-      id, 
-      text, 
-      DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
-      DATE_FORMAT(end_date, '%Y-%m-%d %H:%i:%s') AS end_date,
-      duration,
-      parent_id AS parent,
-      progress
+      tasks.id, 
+      tasks.text, 
+      DATE_FORMAT(tasks.start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
+      DATE_FORMAT(tasks.end_date, '%Y-%m-%d %H:%i:%s') AS end_date,
+      tasks.duration,
+      tasks.parent_id AS parent,
+      tasks.progress,
+      tasks.assigned_to,
+      tasks.priority,
+      users.name AS assigned_to_name
     FROM tasks
-    WHERE project_id = ?
+    LEFT JOIN users ON tasks.assigned_to = users.id
+    WHERE tasks.project_id = ?
   `;
 
   db.query(query, [projectId], (err, tasks) => {
@@ -38,6 +42,8 @@ exports.createTask = (req, res) => {
     progress: parseFloat(req.body.progress) || 0.0,
     project_id: projectId,
     parent_id: req.body.parent_id || null,
+    assigned_to: req.body.assigned_to || null, // Ensure this field is included
+    priority: req.body.priority || "2" // Default to Normal priority
   };
 
   if (!taskData.text || !taskData.start_date || !taskData.duration) {
@@ -45,8 +51,8 @@ exports.createTask = (req, res) => {
   }
 
   const query = `
-    INSERT INTO tasks (text, start_date, end_date, duration, progress, project_id, parent_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (text, start_date, end_date, duration, progress, project_id, parent_id, assigned_to, priority)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
   const values = [
     taskData.text,
@@ -56,6 +62,8 @@ exports.createTask = (req, res) => {
     taskData.progress,
     taskData.project_id,
     taskData.parent_id,
+    taskData.assigned_to, // Ensure this value is included
+    taskData.priority
   ];
 
   db.query(query, values, (err, result) => {
@@ -85,6 +93,8 @@ exports.updateTask = (req, res) => {
     end_date: req.body.end_date ? new Date(req.body.end_date) : null,
     duration: parseInt(req.body.duration, 10) || 1,
     progress: parseFloat(req.body.progress) || 0.0,
+    assigned_to: req.body.assigned_to || null, // Ensure this field is included
+    priority: req.body.priority
   };
 
   if (!taskData.text || !taskData.start_date || !taskData.duration) {
@@ -93,7 +103,7 @@ exports.updateTask = (req, res) => {
 
   const query = `
     UPDATE tasks 
-    SET text = ?, start_date = ?, end_date = ?, duration = ?, progress = ?
+    SET text = ?, start_date = ?, end_date = ?, duration = ?, progress = ?, assigned_to = ?, priority = ?
     WHERE id = ?
   `;
   const values = [
@@ -102,6 +112,8 @@ exports.updateTask = (req, res) => {
     taskData.end_date,
     taskData.duration,
     taskData.progress,
+    taskData.assigned_to, // Ensure this value is included
+    taskData.priority,
     taskId,
   ];
 
