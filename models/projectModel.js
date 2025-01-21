@@ -45,7 +45,12 @@ const Project = {
   },
 
   findById: (id, callback) => {
-    const query = 'SELECT * FROM projects WHERE id = ?';
+    const query = `
+      SELECT p.*, u.name AS project_leader_name
+      FROM projects p
+      LEFT JOIN users u ON p.project_leader = u.id
+      WHERE p.id = ?
+    `;
     db.query(query, [id], callback);
   },
 
@@ -111,7 +116,33 @@ const Project = {
       WHERE ptm.project_id = ?
     `;
     db.query(query, [projectId], callback);
-  }
+  },
+
+  getProjectNames: (callback) => {
+    const query = 'SELECT id, name FROM projects';
+    db.query(query, callback);
+  },
+  
+  getTasksByProjectId: (projectId, callback) => {
+    const query = `
+      SELECT t.*, u.name AS assigned_to_name
+      FROM tasks t
+      LEFT JOIN users u ON t.assigned_to = u.id
+      WHERE t.project_id = ?
+      ORDER BY COALESCE(t.parent_id, t.id), t.parent_id IS NOT NULL, t.id
+    `;
+    db.query(query, [projectId], callback);
+  },
+
+  getMainTasksWithSubtasks: (projectId, callback) => {
+    const query = `
+      SELECT t1.id, t1.text AS name, t1.progress, t2.id AS subtask_id, t2.text AS subtask_name, t2.progress AS subtask_progress
+      FROM tasks t1
+      LEFT JOIN tasks t2 ON t1.id = t2.parent_id
+      WHERE t1.project_id = ? AND t1.parent_id IS NULL
+    `;
+    db.query(query, [projectId], callback);
+  },
 };
 
 module.exports = Project;

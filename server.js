@@ -8,6 +8,8 @@ const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const homeRoutes = require('./routes/homeRoutes'); // Import home routes
+
 const path = require('path');
 const Chat = require('./models/chatModel');
 
@@ -31,6 +33,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', taskRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/home', homeRoutes); // Use home routes
 
 io.on('connection', (socket) => {
   console.log('New client connected');

@@ -85,7 +85,20 @@ exports.getProjectById = (req, res) => {
     if (!project) {
       return res.status(404).send('Project not found');
     }
-    res.status(200).json(project[0]); // Ensure the project is returned correctly
+
+    Project.getTeamMembersByProject(id, (err, teamMembers) => {
+      if (err) {
+        console.error('Failed to fetch team members:', err);
+        return res.status(500).send('Server error');
+      }
+
+      const projectDetails = {
+        ...project[0],
+        teamMembers
+      };
+
+      res.status(200).json(projectDetails);
+    });
   });
 };
 
