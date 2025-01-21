@@ -1,9 +1,10 @@
 const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
-  host: 'localhost',
+  host: 'wu7nft.stackhero-network.com',
+  port: '3973',
   user: 'root',
-  password: '',
+  password: 'QiWUcSevVC3S7PLytpkT5CZcxGEQibMb',
   database: 'project_management'
 });
 
