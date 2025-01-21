@@ -23,7 +23,7 @@ const io = socketIo(server, {
     credentials: true
   }
 });
-const PORT = 5000;
+const PORT = 3973;
 
 app.use(cors());
 app.use(bodyParser.json());
