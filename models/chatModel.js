@@ -1,28 +1,23 @@
-const db = require('../config/db');
+const createConnection = require('../config/db');
 
 const Chat = {
-  create: (message, callback) => {
+  create: async (message) => {
+    const connection = await createConnection();
     const query = 'INSERT INTO chats SET ?';
-    db.query(query, message, (err, result) => {
-      if (err) {
-        console.error('Failed to create chat:', err);
-      }
-      callback(err, result);
-    });
+    const [result] = await connection.query(query, message);
+    return result;
   },
   
-  findByProjectId: (projectId, callback) => {
+  findByProjectId: async (projectId) => {
+    const connection = await createConnection();
     const query = `
       SELECT chats.*, users.name as userName 
       FROM chats 
       JOIN users ON chats.user_id = users.id 
-      WHERE project_id = ?`;
-    db.query(query, [projectId], (err, result) => {
-      if (err) {
-        console.error('Failed to fetch chats:', err);
-      }
-      callback(err, result);
-    });
+      WHERE project_id = ?
+    `;
+    const [rows] = await connection.query(query, [projectId]);
+    return rows;
   }
 };
 

@@ -1,21 +1,29 @@
-const db = require('../config/db'); // Adjust this path as necessary
+const createConnection = require('../config/db');
 
 const User = {
-  create: (username, password, role, name, email, photoProfile, callback) => {
+  create: async (username, password, role, name, email, photoProfile) => {
+    const connection = await createConnection();
     const query = 'INSERT INTO users (username, password, role, name, email, photo_profile) VALUES (?, ?, ?, ?, ?, ?)';
-    db.query(query, [username, password, role, name, email, photoProfile], callback);
+    const [result] = await connection.query(query, [username, password, role, name, email, photoProfile]);
+    return result;
   },
-  findByUsername: (username, callback) => {
+  findByUsername: async (username) => {
+    const connection = await createConnection();
     const query = 'SELECT * FROM users WHERE username = ?';
-    db.query(query, [username], callback);
+    const [rows] = await connection.query(query, [username]);
+    return rows[0];
   },
-  findByRole: (role, callback) => {
+  findByRole: async (role) => {
+    const connection = await createConnection();
     const query = 'SELECT * FROM users WHERE role = ?';
-    db.query(query, [role], callback);
+    const [rows] = await connection.query(query, [role]);
+    return rows;
   },
-  findById: (id, callback) => {  // Add this function
+  findById: async (id) => {
+    const connection = await createConnection();
     const query = 'SELECT * FROM users WHERE id = ?';
-    db.query(query, [id], callback);
+    const [rows] = await connection.query(query, [id]);
+    return rows[0];
   }
 };
 
