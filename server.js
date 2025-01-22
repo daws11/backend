@@ -50,6 +50,18 @@ app.get('/health', (req, res) => {
   res.status(200).send(`Server is running on port ${PORT}`);
 });
 
+app.get('/check-db-connection', async (req, res) => {
+  try {
+    const connection = await createConnection();
+    const [rows] = await connection.query('SELECT 1');
+    res.status(200).send('Database connection successful');
+  } catch (err) {
+    console.error('Database connection failed:', err);
+    res.status(500).send('Database connection failed');
+  }
+});
+
+
 // Initialize database connection
 let connection;
 (async () => {
