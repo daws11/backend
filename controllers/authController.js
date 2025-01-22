@@ -27,29 +27,26 @@ exports.register = [
   }
 ];
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const { username, password } = req.body;
-  User.findByUsername(username, async (err, user) => {
-    if (err) {
-      console.error('Error finding user:', err);
-      return res.status(500).send(err);
-    }
+  try {
+    const user = await User.findByUsername(username);
     if (!user) {
       return res.status(404).send('User not found');
     }
 
-    const isMatch = await bcrypt.compare(password, user[0].password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).send('Invalid credentials');
     }
 
     const payload = {
       user: {
-        id: user[0].id,
-        role: user[0].role,
-        name: user[0].name,
-        email: user[0].email,
-        photoProfile: user[0].photo_profile
+        id: user.id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        photoProfile: user.photo_profile
       }
     };
 
@@ -62,5 +59,8 @@ exports.login = (req, res) => {
         res.status(200).json({ token, user: payload.user });
       }
     );
-  });
+  } catch (err) {
+    console.error('Error during login:', err);
+    res.status(500).send('Server error');
+  }
 };

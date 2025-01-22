@@ -19,7 +19,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: '*', // Allow all origins
+    origin: ['https://lensync.netlify.app', 'http://localhost:3000'], // Allow specific origins
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
     credentials: true
@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3973;
 
 // Configure CORS
 const corsOptions = {
-  origin: '*', // Allow all origins
+  origin: ['https://lensync.netlify.app', 'http://localhost:3000'], // Allow specific origins
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
