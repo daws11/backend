@@ -24,7 +24,7 @@ const io = socketIo(server, {
     credentials: true
   }
 });
-const PORT = process.env.PORT || 3973;
+const PORT = process.env.PORT;
 
 app.use(cors());
 app.use(bodyParser.json());
