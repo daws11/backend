@@ -18,7 +18,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Use environment variable for frontend URL
+    origin: process.env.FRONTEND_URL || 'https://lensync.netlify.app/', // Use environment variable for frontend URL
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
     credentials: true
