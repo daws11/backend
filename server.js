@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
+const createConnection = require('./config/db');
 const projectRoutes = require('./routes/projectRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -17,13 +18,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:3000', // Ganti dengan URL frontend Anda
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Use environment variable for frontend URL
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
     credentials: true
   }
 });
-const PORT = 3973;
+const PORT = process.env.PORT || 3973;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -35,6 +36,20 @@ app.use('/api/projects', taskRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/home', homeRoutes); // Use home routes
 
+// Initialize database connection
+let connection;
+(async () => {
+  try {
+    connection = await createConnection();
+    // Start server after DB connection is established
+    server.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+  }
+})();
+
 io.on('connection', (socket) => {
   console.log('New client connected');
 
@@ -43,7 +58,7 @@ io.on('connection', (socket) => {
     console.log(`Client joined project: ${projectId}`);
   });
 
-  socket.on('sendMessage', (message) => {
+  socket.on('sendMessage', async (message) => {
     const { projectId, userId, text } = message;
     const newMessage = {
       project_id: projectId,
@@ -51,20 +66,18 @@ io.on('connection', (socket) => {
       message: text,
       created_at: new Date()
     };
-    Chat.create(newMessage, (err, result) => {
-      if (err) {
-        console.error('Failed to save message:', err);
-        return;
-      }
+    try {
+      await connection.query(
+        'INSERT INTO chats SET ?',
+        [newMessage]
+      );
       io.to(projectId).emit('receiveMessage', newMessage);
-    });
+    } catch (err) {
+      console.error('Failed to save message:', err);
+    }
   });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
-});
-
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
 });
