@@ -36,6 +36,10 @@ app.use('/api/projects', taskRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/home', homeRoutes); // Use home routes
 
+app.get('/health', (req, res) => {
+  res.status(200).send('Server is running');
+});
+
 // Initialize database connection
 let connection;
 (async () => {
