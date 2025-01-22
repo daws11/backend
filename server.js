@@ -39,7 +39,7 @@ app.use('/api/home', homeRoutes); // Use home routes
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).send('Server is running ',{PORT});
+  res.status(200).send(`Server is running on port ${PORT}`);
 });
 
 // Initialize database connection
