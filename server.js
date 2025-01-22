@@ -27,7 +27,15 @@ const io = socketIo(server, {
 });
 const PORT = process.env.PORT || 3973;
 
-app.use(cors());
+// Configure CORS
+const corsOptions = {
+  origin: ['http://localhost:3000', process.env.FRONTEND_URL || 'https://lensync.netlify.app/'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
@@ -47,6 +55,7 @@ let connection;
 (async () => {
   try {
     connection = await createConnection();
+    console.log('Database connection established');
     // Start server after DB connection is established
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
