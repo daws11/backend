@@ -19,7 +19,14 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: [process.env.FRONTEND_URL], // Use environment variable for frontend URL
+    origin: (origin, callback) => {
+      const allowedOrigins = [process.env.FRONTEND_URL];
+      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type'],
     credentials: true
@@ -29,7 +36,14 @@ const PORT = process.env.PORT;
 
 // Configure CORS
 const corsOptions = {
-  origin: process.env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:3000'];
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -50,6 +64,7 @@ app.get('/health', (req, res) => {
   res.status(200).send(`Server is running on port ${PORT}`);
 });
 
+// Check database connection endpoint
 app.get('/check-db-connection', async (req, res) => {
   try {
     const connection = await createConnection();
@@ -60,7 +75,6 @@ app.get('/check-db-connection', async (req, res) => {
     res.status(500).send('Database connection failed');
   }
 });
-
 
 // Initialize database connection
 let connection;
