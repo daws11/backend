@@ -25,7 +25,7 @@ const io = socketIo(server, {
     credentials: true
   }
 });
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3973;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -37,6 +37,7 @@ app.use('/api/projects', taskRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/home', homeRoutes); // Use home routes
 
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).send('Server is running');
 });
