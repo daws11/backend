@@ -14,21 +14,21 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-exports.getChatsByProjectId = (req, res) => {
+exports.getChatsByProjectId = async (req, res) => {
   const { projectId } = req.params;
   if (!projectId) {
     return res.status(400).send('Project ID is required');
   }
-  Chat.findByProjectId(projectId, (err, chats) => {
-    if (err) {
-      console.error('Failed to fetch chats:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const chats = await Chat.findByProjectId(projectId);
     res.status(200).json(chats);
-  });
+  } catch (err) {
+    console.error('Failed to fetch chats:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.createChat = (req, res) => {
+exports.createChat = async (req, res) => {
   const { projectId, userId, message, userName } = req.body;
   const mediaUrl = req.file ? `/uploads/${req.file.filename}` : null;
   const mediaType = req.file ? req.file.mimetype.split('/')[0] : null;
@@ -46,13 +46,13 @@ exports.createChat = (req, res) => {
     created_at: new Date()
   };
 
-  Chat.create(newMessage, (err, result) => {
-    if (err) {
-      console.error('Failed to create chat:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const result = await Chat.create(newMessage);
     res.status(201).json(result);
-  });
+  } catch (err) {
+    console.error('Failed to create chat:', err);
+    res.status(500).send('Server error');
+  }
 };
 
 exports.upload = upload.single('media');

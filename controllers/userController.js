@@ -1,43 +1,47 @@
 const User = require('../models/userModel');
 
-exports.getAllUsers = (req, res) => {
-  User.getAll((err, users) => {
-    if (err) return res.status(500).send(err);
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.getAll();
     res.status(200).send(users);
-  });
+  } catch (err) {
+    console.error('Failed to fetch users:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.updateUserStatus = (req, res) => {
+exports.updateUserStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  User.updateStatus(id, status, (err, result) => {
-    if (err) return res.status(500).send(err);
+  try {
+    const result = await User.updateStatus(id, status);
     res.status(200).send(result);
-  });
+  } catch (err) {
+    console.error('Failed to update user status:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getUserExecutions = (req, res) => {
-  User.findByRole('user_execution', (err, users) => {
-    if (err) {
-      console.error('Failed to fetch users:', err);
-      return res.status(500).send('Server error');
-    }
+exports.getUserExecutions = async (req, res) => {
+  try {
+    const users = await User.findByRole('user_execution');
     res.status(200).json(users);
-  });
+  } catch (err) {
+    console.error('Failed to fetch users:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getUserById = (req, res) => {
+exports.getUserById = async (req, res) => {
   const { id } = req.params;
-  User.findById(id, (err, user) => {
-    if (err) {
-      console.error('Failed to fetch user:', err);
-      return res.status(500).send('Server error');
-    }
-    if (!user || user.length === 0) {
+  try {
+    const user = await User.findById(id);
+    if (!user) {
       return res.status(404).send('User not found');
     }
-    res.status(200).json(user[0]);
-  });
+    res.status(200).json(user);
+  } catch (err) {
+    console.error('Failed to fetch user:', err);
+    res.status(500).send('Server error');
+  }
 };
-
-

@@ -1,7 +1,7 @@
-const db = require("../config/db");
+const createConnection = require("../config/db");
 
 // Get all tasks for a project
-exports.getTasks = (req, res) => {
+exports.getTasks = async (req, res) => {
   const { projectId } = req.params;
 
   const query = `
@@ -21,17 +21,18 @@ exports.getTasks = (req, res) => {
     WHERE tasks.project_id = ?
   `;
 
-  db.query(query, [projectId], (err, tasks) => {
-    if (err) {
-      console.error("Failed to fetch tasks:", err);
-      return res.status(500).send("Server error");
-    }
+  try {
+    const connection = await createConnection();
+    const [tasks] = await connection.query(query, [projectId]);
     res.status(200).json({ data: tasks });
-  });
+  } catch (err) {
+    console.error("Failed to fetch tasks:", err);
+    res.status(500).send("Server error");
+  }
 };
 
 // Create a new task
-exports.createTask = (req, res) => {
+exports.createTask = async (req, res) => {
   const { projectId } = req.params;
 
   const taskData = {
@@ -66,12 +67,9 @@ exports.createTask = (req, res) => {
     taskData.priority
   ];
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-      console.error("Failed to create task:", err);
-      return res.status(500).json({ error: "Failed to create task" });
-    }
-
+  try {
+    const connection = await createConnection();
+    const [result] = await connection.query(query, values);
     res.status(201).json({
       id: result.insertId,
       ...taskData,
@@ -80,11 +78,14 @@ exports.createTask = (req, res) => {
         ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
         : null,
     });
-  });
+  } catch (err) {
+    console.error("Failed to create task:", err);
+    res.status(500).json({ error: "Failed to create task" });
+  }
 };
 
 // Update a task by ID
-exports.updateTask = (req, res) => {
+exports.updateTask = async (req, res) => {
   const { taskId } = req.params;
 
   const taskData = {
@@ -117,16 +118,12 @@ exports.updateTask = (req, res) => {
     taskId,
   ];
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-      console.error("Failed to update task:", err);
-      return res.status(500).json({ error: "Failed to update task" });
-    }
-
+  try {
+    const connection = await createConnection();
+    const [result] = await connection.query(query, values);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Task not found" });
     }
-
     res.status(200).json({
       id: taskId,
       ...taskData,
@@ -135,24 +132,27 @@ exports.updateTask = (req, res) => {
         ? taskData.end_date.toISOString().slice(0, 19).replace("T", " ")
         : null,
     });
-  });
+  } catch (err) {
+    console.error("Failed to update task:", err);
+    res.status(500).json({ error: "Failed to update task" });
+  }
 };
 
 // Delete a task by ID
-exports.deleteTask = (req, res) => {
+exports.deleteTask = async (req, res) => {
   const { taskId } = req.params;
 
   const query = "DELETE FROM tasks WHERE id = ?";
-  db.query(query, [taskId], (err, result) => {
-    if (err) {
-      console.error("Failed to delete task:", err);
-      return res.status(500).json({ error: "Failed to delete task" });
-    }
 
+  try {
+    const connection = await createConnection();
+    const [result] = await connection.query(query, [taskId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Task not found" });
     }
-
     res.status(200).json({ message: `Task with id ${taskId} deleted.` });
-  });
+  } catch (err) {
+    console.error("Failed to delete task:", err);
+    res.status(500).json({ error: "Failed to delete task" });
+  }
 };

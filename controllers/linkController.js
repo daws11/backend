@@ -1,7 +1,7 @@
-const db = require("../config/db");
+const createConnection = require("../config/db");
 
 // Get all links for a project
-exports.getLinks = (req, res) => {
+exports.getLinks = async (req, res) => {
   const { projectId } = req.params;
 
   const query = `
@@ -11,18 +11,18 @@ exports.getLinks = (req, res) => {
     WHERE t.project_id = ?
   `;
 
-  db.query(query, [projectId], (err, links) => {
-    if (err) {
-      console.error("Failed to fetch links:", err);
-      return res.status(500).json({ error: "Failed to fetch links" });
-    }
-
-    res.status(200).json(links); // Kirim data langsung tanpa konversi
-  });
+  try {
+    const connection = await createConnection();
+    const [links] = await connection.query(query, [projectId]);
+    res.status(200).json(links);
+  } catch (err) {
+    console.error("Failed to fetch links:", err);
+    res.status(500).json({ error: "Failed to fetch links" });
+  }
 };
 
 // Create a new link
-exports.createLink = (req, res) => {
+exports.createLink = async (req, res) => {
   const { projectId } = req.params;
   const { source, target, type } = req.body;
 
@@ -40,32 +40,31 @@ exports.createLink = (req, res) => {
     VALUES (?, ?, ?)
   `;
 
-  db.query(query, [source, target, type], (err, result) => {
-    if (err) {
-      console.error("Failed to create link:", err);
-      return res.status(500).json({ error: "Failed to create link" });
-    }
-
+  try {
+    const connection = await createConnection();
+    const [result] = await connection.query(query, [source, target, type]);
     res.status(201).json({ id: result.insertId, type });
-  });
+  } catch (err) {
+    console.error("Failed to create link:", err);
+    res.status(500).json({ error: "Failed to create link" });
+  }
 };
 
 // Delete a link by ID
-exports.deleteLink = (req, res) => {
+exports.deleteLink = async (req, res) => {
   const { linkId } = req.params;
 
   const query = "DELETE FROM task_links WHERE id = ?";
 
-  db.query(query, [linkId], (err, result) => {
-    if (err) {
-      console.error("Failed to delete link:", err);
-      return res.status(500).json({ error: "Failed to delete link" });
-    }
-
+  try {
+    const connection = await createConnection();
+    const [result] = await connection.query(query, [linkId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Link not found" });
     }
-
     res.status(200).json({ message: `Link with id ${linkId} deleted.` });
-  });
+  } catch (err) {
+    console.error("Failed to delete link:", err);
+    res.status(500).json({ error: "Failed to delete link" });
+  }
 };

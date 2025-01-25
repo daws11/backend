@@ -1,33 +1,33 @@
 const Project = require('../models/projectModel');
 
-exports.getProjectNames = (req, res) => {
-  Project.getProjectNames((err, projectNames) => {
-    if (err) {
-      console.error('Failed to fetch project names:', err);
-      return res.status(500).send('Server error');
-    }
+exports.getProjectNames = async (req, res) => {
+  try {
+    const projectNames = await Project.getProjectNames();
     res.status(200).json(projectNames);
-  });
+  } catch (err) {
+    console.error('Failed to fetch project names:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getTasksByProjectId = (req, res) => {
+exports.getTasksByProjectId = async (req, res) => {
   const { id } = req.params;
-  Project.getTasksByProjectId(id, (err, tasks) => {
-    if (err) {
-      console.error('Failed to fetch tasks:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const tasks = await Project.getTasksByProjectId(id);
     res.status(200).json(tasks);
-  });
+  } catch (err) {
+    console.error('Failed to fetch tasks:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getMainTasksWithSubtasks = (req, res) => {
+exports.getMainTasksWithSubtasks = async (req, res) => {
   const { id } = req.params;
-  Project.getMainTasksWithSubtasks(id, (err, tasks) => {
-    if (err) {
-      console.error('Failed to fetch main tasks with subtasks:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const tasks = await Project.getMainTasksWithSubtasks(id);
     res.status(200).json(tasks);
-  });
+  } catch (err) {
+    console.error('Failed to fetch main tasks with subtasks:', err);
+    res.status(500).send('Server error');
+  }
 };
