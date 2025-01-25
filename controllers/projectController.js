@@ -1,27 +1,27 @@
 const Project = require('../models/projectModel');
 
-exports.getProjects = (req, res) => {
-  Project.findAll((err, projects) => {
-    if (err) {
-      console.error('Failed to fetch projects:', err);
-      return res.status(500).send('Server error');
-    }
+exports.getProjects = async (req, res) => {
+  try {
+    const projects = await Project.findAll();
     res.status(200).json(projects);
-  });
+  } catch (err) {
+    console.error('Failed to fetch projects:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getTeamMembersByProject = (req, res) => {
+exports.getTeamMembersByProject = async (req, res) => {
   const { id } = req.params;
-  Project.getTeamMembersByProject(id, (err, teamMembers) => {
-    if (err) {
-      console.error('Failed to fetch team members:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const teamMembers = await Project.getTeamMembersByProject(id);
     res.status(200).json(teamMembers);
-  });
+  } catch (err) {
+    console.error('Failed to fetch team members:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.createProject = (req, res) => {
+exports.createProject = async (req, res) => {
   const {
     name,
     jobOwner,
@@ -49,66 +49,55 @@ exports.createProject = (req, res) => {
     hasProjectWarranty
   };
 
-  // Create project
-  Project.create(newProject, (err, result) => {
-    if (err) {
-      console.error('Failed to create project:', err);
-      return res.status(500).send('Server error');
-    }
-
+  try {
+    // Create project
+    const result = await Project.create(newProject);
     const projectId = result.insertId;
     console.log('Created Project ID:', projectId);
 
     // Add team members to the project
     if (teamMembers && teamMembers.length > 0) {
-      Project.addTeamMembers(projectId, teamMembers, (err) => {
-        if (err) {
-          console.error('Failed to add team members:', err);
-          return res.status(500).send('Failed to add team members');
-        }
-        console.log('Team Members Added:', teamMembers);
-        res.status(201).send({ projectId });
-      });
-    } else {
-      res.status(201).send({ projectId });
+      await Project.addTeamMembers(projectId, teamMembers);
+      console.log('Team Members Added:', teamMembers);
     }
-  });
+    res.status(201).send({ projectId });
+  } catch (err) {
+    console.error('Failed to create project:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.getProjectById = (req, res) => {
+exports.getProjectById = async (req, res) => {
   const { id } = req.params;
-  Project.findById(id, (err, project) => {
-    if (err) {
-      console.error('Failed to fetch project:', err);
-      return res.status(500).send('Server error');
-    }
+  try {
+    const project = await Project.findById(id);
     if (!project) {
       return res.status(404).send('Project not found');
     }
 
-    Project.getTeamMembersByProject(id, (err, teamMembers) => {
-      if (err) {
-        console.error('Failed to fetch team members:', err);
-        return res.status(500).send('Server error');
-      }
+    const teamMembers = await Project.getTeamMembersByProject(id);
+    const projectDetails = {
+      ...project,
+      teamMembers
+    };
 
-      const projectDetails = {
-        ...project[0],
-        teamMembers
-      };
-
-      res.status(200).json(projectDetails);
-    });
-  });
+    res.status(200).json(projectDetails);
+  } catch (err) {
+    console.error('Failed to fetch project:', err);
+    res.status(500).send('Server error');
+  }
 };
 
-exports.deleteProject = (req, res) => {
+exports.deleteProject = async (req, res) => {
   const { id } = req.params;
-  Project.deleteById(id, (err) => {
-    if (err) {
-      console.error('Failed to delete project:', err);
-      return res.status(500).send('Server error');
+  try {
+    const result = await Project.deleteById(id);
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Project not found');
     }
     res.status(200).send(`Project with id ${id} deleted.`);
-  });
+  } catch (err) {
+    console.error('Failed to delete project:', err);
+    res.status(500).send('Server error');
+  }
 };
